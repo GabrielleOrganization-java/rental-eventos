@@ -1,5 +1,5 @@
 from flask import Flask, render_template, request, redirect, url_for, session, flash
-from sistema_locacao.database import conectar
+from database import conectar
 
 
 app = Flask(__name__)
