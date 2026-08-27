@@ -1,0 +1,35 @@
+0<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Sistema de Locação</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+
+<body>
+
+    <h1>Sistema de Locação de Equipamentos</h1>
+
+    <p>Bem-vindo ao sistema!</p>
+
+    <a href="{{ url_for('equipamentos') }}">
+        <button>Cadastro de Equipamentos</button>
+    </a>
+
+    <a href="{{ url_for('estoque') }}">
+        <button>Estoque</button>
+    </a>
+
+    <br><br>
+
+    <a href="{{ url_for('logout') }}">
+        <button>Sair</button>
+    </a>
+
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+
+</body>
+</html>
