@@ -1,22 +1,12 @@
-import psycopg2
-
+import pg8000
 
 def conectar():
-    conexao = psycopg2.connect(
+    conexao = pg8000.connect(
         host="localhost",
+        port=5432,
         database="rental_db",
         user="postgres",
-        password="ALUNO",
-        port="5432"
+        password="ALUNO"
     )
 
     return conexao
-
-if __name__ == "__main__":
-    try:
-        conexao = conectar()
-        print("Conexão com o banco realizada com sucesso!")
-        conexao.close()
-    except Exception as erro:
-        print("Erro ao conectar com o banco:")
-        print(erro)

@@ -1,2 +1,9 @@
-flask
-psycopg2-binary
+pip install flask
+pip install pg8000
+
+Python 3.14.2
+pip list
+
+
+Python (extensão VS Code)
+Pylance (extensão VS Code)
