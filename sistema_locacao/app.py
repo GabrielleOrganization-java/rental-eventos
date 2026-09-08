@@ -1,131 +1,284 @@
 from flask import Flask, request, jsonify
-from flask_jwt_extended import (
-    JWTManager,
-    create_access_token,
-    jwt_required,
-    get_jwt_identity
-)
 from database import conectar
 
 app = Flask(__name__)
 
-# Configuração do JWT
-app.config["JWT_SECRET_KEY"] = "chave-secreta-sistema-locacao"
-jwt = JWTManager(app)
 
-# =========================
 # LOGIN
-# =========================
-
 @app.route("/login", methods=["POST"])
 def login():
+    dados = request.json
 
-    dados = request.get_json()
+    email = dados["email"]
+    senha = dados["senha"]
 
-    if not dados:
+    conexao = conectar()
+    cursor = conexao.cursor()
+
+    cursor.execute("""
+        SELECT id, nome, email
+        FROM funcionario
+        WHERE email = %s AND senha = %s
+    """, (email, senha))
+
+    funcionario = cursor.fetchone()
+
+    cursor.close()
+    conexao.close()
+
+    if funcionario:
         return jsonify({
-            "erro": "Envie os dados em JSON."
-        }), 400
-
-    email = dados.get("email")
-    senha = dados.get("senha")
-
-    # Funcionário de teste
-    if email == "admin@admin.com" and senha == "1234":
-
-        token = create_access_token(
-            identity="1"
-        )
-
-        return jsonify({
-            "mensagem": "Login realizado com sucesso!",
-            "funcionario_id": 1,
-            "nome": "Administrador",
-            "access_token": token
-        }), 200
+            "mensagem": "Login realizado",
+            "id": funcionario[0],
+            "nome": funcionario[1],
+            "email": funcionario[2]
+        })
 
     return jsonify({
-        "erro": "E-mail ou senha incorretos."
+        "mensagem": "Email ou senha incorretos"
     }), 401
 
 
-# =========================
-# ROTA INICIAL
-# =========================
+# FUNCIONÁRIOS
+@app.route("/funcionarios", methods=["GET"])
+def listar_funcionarios():
+    conexao = conectar()
+    cursor = conexao.cursor()
 
-@app.route("/", methods=["GET"])
-def index():
+    cursor.execute("""
+        SELECT id, nome, cpf, email, senha
+        FROM funcionario
+        ORDER BY id
+    """)
 
-    return jsonify({
-        "sistema": "Sistema de Locação",
-        "status": "API funcionando",
-        "mensagem": "Servidor Flask funcionando corretamente."
-    }), 200
+    funcionarios = cursor.fetchall()
 
+    cursor.close()
+    conexao.close()
 
-# =========================
-# EQUIPAMENTO
-# =========================
+    lista = []
 
-@app.route("/equipamento", methods=["GET"])
-@jwt_required()
-def equipamento():
+    for funcionario in funcionarios:
+        lista.append({
+            "id": funcionario[0],
+            "nome": funcionario[1],
+            "cpf": funcionario[2],
+            "email": funcionario[3],
+            "senha": funcionario[4]
+        })
 
-    try:
-        funcionario_id = get_jwt_identity()
+    return jsonify(lista)
 
-        conexao = conectar()
-        cursor = conexao.cursor()
+@app.route("/funcionarios", methods=["POST"])
+def cadastrar_funcionario():
+    dados = request.json
 
-        cursor.execute("SELECT * FROM equipamento")
+    conexao = conectar()
+    cursor = conexao.cursor()
 
-        resultados = cursor.fetchall()
+    cursor.execute("""
+            INSERT INTO funcionario (nome, cpf, email, senha)
+            VALUES (%s, %s, %s, %s)
+        """, (
+            dados["nome"],
+            dados["cpf"],
+            dados["email"],
+            dados["senha"]
+        ))
 
-        # Pega os nomes das colunas
-        colunas = [descricao[0] for descricao in cursor.description]
+    conexao.commit()
 
-        equipamento = []
-
-        for resultado in resultados:
-            equipamento = dict(zip(colunas, resultado))
-            equipamento.append(equipamento)
-
-        cursor.close()
-        conexao.close()
-
-        return jsonify({
-            "funcionario_id": funcionario_id,
-            "quantidade": len(equipamento),
-            "equipamento": equipamento
-        }), 200
-
-    except Exception as erro:
-
-        return jsonify({
-            "erro": "Erro ao consultar equipamento.",
-            "detalhes": str(erro)
-        }), 500
-
-
-# =========================
-# TESTE DO JWT
-# =========================
-
-@app.route("/teste-jwt", methods=["GET"])
-@jwt_required()
-def teste_jwt():
-
-    funcionario_id = get_jwt_identity()
+    cursor.close()
+    conexao.close()
 
     return jsonify({
-        "mensagem": "JWT válido!",
-        "funcionario_id": funcionario_id
-    }), 200
+        "mensagem": "Funcionário cadastrado"
+    })
+
+# EQUIPAMENTOS
+@app.route("/equipamentos", methods=["GET"])
+def listar_equipamentos():
+    conexao = conectar()
+    cursor = conexao.cursor()
+
+    cursor.execute("""
+        SELECT id, marca, modelo, categoria, potencia,
+               material, peso, dimensoes, cor
+        FROM equipamento
+        ORDER BY id
+    """)
+
+    equipamentos = cursor.fetchall()
+
+    cursor.close()
+    conexao.close()
+
+    lista = []
+
+    for equipamento in equipamentos:
+        lista.append({
+            "id": equipamento[0],
+            "marca": equipamento[1],
+            "modelo": equipamento[2],
+            "categoria": equipamento[3],
+            "potencia": equipamento[4],
+            "material": equipamento[5],
+            "peso": equipamento[6],
+            "dimensoes": equipamento[7],
+            "cor": equipamento[8]
+        })
+
+    return jsonify(lista)
+
+# EQUIPAMENTOS - CADASTRAR
+@app.route("/equipamentos", methods=["POST"])
+def cadastrar_equipamento():
+    dados = request.json
+
+    conexao = conectar()
+    cursor = conexao.cursor()
+
+    cursor.execute("""
+        INSERT INTO equipamento
+        (marca, modelo, categoria, potencia, material, peso, dimensoes, cor)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+    """, (
+        dados["marca"],
+        dados["modelo"],
+        dados["categoria"],
+        dados["potencia"],
+        dados["material"],
+        dados["peso"],
+        dados["dimensoes"],
+        dados["cor"]
+    ))
+
+    conexao.commit()
+
+    cursor.close()
+    conexao.close()
+
+    return jsonify({
+        "mensagem": "Equipamento cadastrado"
+    })
 
 
-# =========================
-# EXECUÇÃO
-# =========================
+# ESTOQUE - LISTAR
+@app.route("/estoque", methods=["GET"])
+def listar_estoque():
+    conexao = conectar()
+    cursor = conexao.cursor()
+
+    cursor.execute("""
+        SELECT id, quant_disponivel, quant_minima, equipamento_id
+        FROM estoque
+        ORDER BY id
+    """)
+
+    estoques = cursor.fetchall()
+
+    cursor.close()
+    conexao.close()
+
+    lista = []
+
+    for estoque in estoques:
+        lista.append({
+            "id": estoque[0],
+            "quant_disponivel": estoque[1],
+            "quant_minima": estoque[2],
+            "equipamento_id": estoque[3]
+        })
+
+    return jsonify(lista)
+
+
+# ESTOQUE - CADASTRAR
+@app.route("/estoque", methods=["POST"])
+def cadastrar_estoque():
+    dados = request.json
+
+    conexao = conectar()
+    cursor = conexao.cursor()
+
+    cursor.execute("""
+        INSERT INTO estoque
+        (quant_disponivel, quant_minima, equipamento_id)
+        VALUES (%s, %s, %s)
+    """, (
+        dados["quant_disponivel"],
+        dados["quant_minima"],
+        dados["equipamento_id"]
+    ))
+
+    conexao.commit()
+
+    cursor.close()
+    conexao.close()
+
+    return jsonify({
+        "mensagem": "Estoque cadastrado"
+    })
+
+
+# REGISTRO - LISTAR
+@app.route("/registros", methods=["GET"])
+def listar_registros():
+    conexao = conectar()
+    cursor = conexao.cursor()
+
+    cursor.execute("""
+        SELECT id, entrada, saida, funcionario_id, estoque_id
+        FROM registro
+        ORDER BY id
+    """)
+
+    registros = cursor.fetchall()
+
+    cursor.close()
+    conexao.close()
+
+    lista = []
+
+    for registro in registros:
+        lista.append({
+            "id": registro[0],
+            "entrada": str(registro[1]),
+            "saida": str(registro[2]),
+            "funcionario_id": registro[3],
+            "estoque_id": registro[4]
+        })
+
+    return jsonify(lista)
+
+
+# REGISTRO - CADASTRAR
+@app.route("/registros", methods=["POST"])
+def cadastrar_registro():
+    dados = request.json
+
+    conexao = conectar()
+    cursor = conexao.cursor()
+
+    cursor.execute("""
+        INSERT INTO registro
+        (entrada, saida, funcionario_id, estoque_id)
+        VALUES (%s, %s, %s, %s)
+    """, (
+        dados["entrada"],
+        dados["saida"],
+        dados["funcionario_id"],
+        dados["estoque_id"]
+    ))
+
+    conexao.commit()
+
+    cursor.close()
+    conexao.close()
+
+    return jsonify({
+        "mensagem": "Registro cadastrado"
+    })
 
 if __name__ == "__main__":
     app.run(debug=True)
