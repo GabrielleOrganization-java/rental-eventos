@@ -40,6 +40,8 @@ def login():
 
 
 # FUNCIONÁRIOS
+
+# FUNCIONÁRIOS- listar
 @app.route("/funcionarios", methods=["GET"])
 def listar_funcionarios():
     conexao = conectar()
@@ -69,6 +71,7 @@ def listar_funcionarios():
 
     return jsonify(lista)
 
+# FUNCIONÁRIOS- CADASTRAR
 @app.route("/funcionarios", methods=["POST"])
 def cadastrar_funcionario():
     dados = request.json
@@ -95,7 +98,36 @@ def cadastrar_funcionario():
         "mensagem": "Funcionário cadastrado"
     })
 
+# FUNCIONÁRIOS - DELETAR
+@app.route("/funcionarios", methods=["DELETE"])
+def deletar_funcionario():
+    dados = request.json
+
+    conexao = conectar()
+    cursor = conexao.cursor()
+
+    cursor.execute("""
+        DELETE FROM registro
+        WHERE funcionario_id = %s
+    """, (dados["id"],))
+
+    cursor.execute("""
+        DELETE FROM funcionario
+        WHERE id = %s
+    """, (dados["id"],))
+
+    conexao.commit()
+
+    cursor.close()
+    conexao.close()
+
+    return jsonify({
+        "mensagem": "Funcionário deletado"
+    })
+
 # EQUIPAMENTOS
+
+#EQUIPAMENTOS- LISTAR
 @app.route("/equipamentos", methods=["GET"])
 def listar_equipamentos():
     conexao = conectar()
@@ -162,7 +194,34 @@ def cadastrar_equipamento():
         "mensagem": "Equipamento cadastrado"
     })
 
+# EQUIPAMENTOS - DELETAR
+@app.route("/equipamentos", methods=["DELETE"])
+def deletar_equipamento():
+    dados = request.json
 
+    conexao = conectar()
+    cursor = conexao.cursor()
+
+    cursor.execute("""
+        DELETE FROM estoque
+        WHERE equipamento_id = %s
+    """, (dados ["id"],))
+
+    cursor.execute("""
+            DELETE FROM equipamento
+            WHERE id = %s
+        """, (dados["id"],))
+
+    conexao.commit()
+
+    cursor.close()
+    conexao.close()
+
+    return jsonify({
+        "mensagem": "Equipamento deletado"
+    })
+
+#ESTOQUE
 # ESTOQUE - LISTAR
 @app.route("/estoque", methods=["GET"])
 def listar_estoque():
@@ -220,7 +279,34 @@ def cadastrar_estoque():
         "mensagem": "Estoque cadastrado"
     })
 
+#ESTOQUE - DELETAR
+@app.route("/estoque", methods=["DELETE"])
+def deletar_estoque():
+    dados = request.json
 
+    conexao = conectar()
+    cursor = conexao.cursor()
+
+    cursor.execute("""
+        DELETE FROM registro
+        WHERE estoque_id = %s
+    """, (dados["id"],))
+
+    cursor.execute("""
+        DELETE FROM estoque
+        WHERE id = %s
+    """, (dados["id"],))
+
+    conexao.commit()
+
+    cursor.close()
+    conexao.close()
+
+    return jsonify({
+        "mensagem": "Estoque deletado"
+    })
+
+#REGISTRO
 # REGISTRO - LISTAR
 @app.route("/registros", methods=["GET"])
 def listar_registros():
@@ -278,6 +364,28 @@ def cadastrar_registro():
 
     return jsonify({
         "mensagem": "Registro cadastrado"
+    })
+
+# REGISTRO - DELETE
+@app.route("/registros", methods=["DELETE"])
+def deletar_registro():
+    dados = request.json
+
+    conexao = conectar()
+    cursor = conexao.cursor()
+
+    cursor.execute(""" 
+        DELETE FROM registro
+        where id = %s
+    """, (dados["id"],))
+
+    conexao.commit()
+
+    cursor.close()
+    conexao.close()
+    
+    return jsonify({
+        "mensagem": "Registro deletado"
     })
 
 if __name__ == "__main__":
